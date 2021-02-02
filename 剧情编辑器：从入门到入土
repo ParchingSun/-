@@ -1,28 +1,169 @@
 剧情编辑器：从入门到入土
 
-├────剧编简介
-├────脚本结构
-├────剧编wiki注释
+|--  剧编简介
+|--  脚本结构
+|--  剧编现有wiki的注释
+|--  编写脚本的过程
+|--  剧情进版本的过程
+|--  踩过的血泪坑
+|--  剧情编辑器未来可优化的方向
 
 1.剧编简介
     现有脚本语言中，所有可见及不可见事物都被成为“节点”，节点有各种类型，不同类型有不同的属性，属性的变化构成动态的画面表现，也就是当前的剧情。
+	
 2.脚本结构
     @scene scene_<script name>
         @stage()
         {
             //除去dialogue外的节点都需要在此“声明”
         }
-        @action start<script name>()
+        @action start<script_part_1_name>()
         {
             //stage（）中声明的节点在此处发生属性变化，构成“动”
+        }
+		@action start<script_part_2_name>()
+        {
         }
     @end
     @storyline MP0104a()
     {
-        enterScene(scene = scene_scene<script name>, action = "start<script name>")
+        enterScene(scene = scene_scene<script name>, action = "start<script_part_1_name>")
+		enterScene(scene = scene_scene<script name>, action = "start<script_part_2_name>")
     }
-3.剧编wiki注释
-4.编辑一段脚本的基本过程
+	
+3.剧编现有wiki注释
+
+4.编写脚本的过程（运行报错先按图索骥，确认每一步都完成再反馈给程序）
+|
+|--a.更新res, lua, stories分支
+|
+|--b.资源梳理
+|     |--美术资源放入路径和重新命名
+|     |--数值分支TranslateDT台词、英雄名字页签合表
+|
+|--c.编写脚本
+|
+|--d.终端导入分支资源
+|     |--cd TBC/tbcres
+|     |--xdo ui anim sync 导入ui、动画等资源
+|     |--xrun luaalt 导入lua
+|     |--xrun dataset -s <data brach name> 导入数值分支
+|     |--xrun story 导入剧情脚本
+|          |--如有报错,需要返回b纠错
+|
+|--e.在devConfig.lua中使用剧情测试接口、更换账号、更新服务器（如需）
+|
+|--f.运行xcode，查看效果
+|
+|--g.根据效果决定返回b/c修改或者进入下一步骤
+
+5.脚本进版本的过程
+|
+|--a.合表进测试分支：
+|     |--TranslateDT-台词、英雄名字两个页签
+|     |--StagePointDT-StageStory列
+|     |--ConfigValueDT-PrologueStoryName、Novice_WinRange两个字段
+|--b.提交stories和res分支的更新
+|--c.测试验证后，通知前端合stories和res分支，自己合数值分支
+
+6.踩过的血泪坑
+   a.小精灵动画的播放
+   |--  配置（stage）
+   |		{
+   |            type:"Animation",
+   |            id:"hibel",
+   |            resource:["animxml/xiaojinling.skel"],
+   |            anchorPoint:{x:0,y:0.5},
+   |            position:{refpt : {x : -0.2, y : 0.6}
+   |			scale:0.2,
+   |		},
+   |--  动作（action）
+   |		$hibel play(name = "stand", loop = true, speed = <number>)
+   b.类似的，其他skel动画的播放（包括buff和英雄的技能特效等），下面以序章中格瑞斯大招为例
+   |--  配置
+   |		{
+   |            type:"Animation",
+   |            id:"traverse",
+   |            resource:["animxml/eff_H209_hemin_skillx_xh_xia.skel"],
+   |            anchorPoint:{x:0.5,y:0},
+   |            position:{refpt : {x : 0.25, y : 0.25}},
+   |            scale:0.45,
+   |        },
+   |--  动作
+   |		$traverse play(name = "eff_H209_hemin_skillx_xh_xia", loop = true)
+   c.四条常用语句
+   |    $skipButton show/hide() 跳过按钮出现/隐藏
+   |    $curtain fadeOut/fadeIn(duration = <num>s) 幕布渐入/渐出
+   |    sleep(duration = <num>s) 等待某一时长
+   |    $dialogue speak() 等待触发点击时间
+   |	wait(type = "ENTER_HOME_VI3EW",)  调试剧情用，加在剧情末尾，可以无须换账号
+   d.富文本配置必须严格按照以下格式：
+   |    <font face='' size='' color=''>content</font>
+   e.同一脚本中可以有多个action，适用于切割大段剧情，制作存档或跳过节点。
+   |
+   f.两个函数的联系和区别：fade系列 vs. updateNode
+   |
+   |--  联系：都可以用于非模型、动画节点的出入场
+   |--  区别： fadeTo/fadeIn/fadeOut比updateNode(opacity = <num>)有更好的缓冲感；前三者可以设置时长、后者几乎是瞬间发生的。
+   |
+   g.scale和layOutMode:2的异同：
+   |
+   |--  同：都可以调整背景图的缩放大小
+   |--  异：
+   |    |--  layOutMode可以自动根据屏幕大小调整背景的缩放尺寸，而scale需要手动寻找适配所有屏幕的缩放尺寸
+   |    |--  layOutMode下震屏必然会露出主界面，而scale则能很好保证不出现这种穿帮
+   h.调整第一章的战斗前剧情时，必须通知前端修改引导，因为这部分剧情是粘贴在引导脚本中的。
+   i.播放模型技能动作（不包括特效）
+   |	$artemis play(name = "skillx", loop = false)
+   |	$artemis play(name = "stand", loop = true)
+   j.在更改美术资源的路径或名称后，应该清理缓存，TBC/tbc/Resources 中的全部文件，然后重新导入
+   |
+   k.图片的类型属性resType是重要的，1表示散图资源（大多数情况下都是散图），0表示合图资源
+   |
+   l.剧情跟假战斗的衔接：背景scale = 1.1，模型scale=0.45
+   |
+   m.zorder规范：
+   |--  $skipButton show()：1000
+   |    $selectGroup show()：350
+   |    $dialogue speak()：250
+   |    为了不干扰其他节点的触发，剧情用到的所有美术、对话节点的zorder规定在[1,99]之间
+   |--  部分设备无法识别zorder相同的节点之间按照自然逻辑决定层级的规则，因此存在重叠的节点之间，最好规定不同的zorder
+   |--  子节点的层级至少高于父节点层级
+   n.$dialogue addPlotText的新增属性
+   |    location的变动：同时调整小箭头朝向和小头像位置
+   |    bghide：boolean类型，默认为false，为正常对话框，true调用黑幕白字的对话框
+   |    iconImg: string类型，为图片路径，可以取代modelId，调用无战斗模型的剧情人物的小头像，例如希贝尔
+   |    typeWriter: boolean类型，默认为true，实现打字机效果。
+   |        |--  配套的，下列语句也是必须的：
+   |        |--  if(_ctx:getVar("writeAction") == nil)
+   |             {
+   |             $plot_5 stopPlayTypeWriting()
+   |             sleep(duration = 0.5)
+   |             $dialogue speak()
+   |             }		
+   o.skel类型动画的转向，使用scaleX和scaleY的负值，例如希贝尔
+   |
+   p.剧情接口和假战斗接口：
+   |--  剧情接口：runScript(name = "<sript name>")
+   |--  假战斗接口：if(_ctx:getFalseBattleRecord("record_1","WaitBattleRecord_1")){}
+   |              wait(type="WaitBattleRecord_1")
+   |--  在使用接口前，$skipButton必须隐藏，否则会遮挡调用剧情的跳过按钮
+   |--  与嵌套式的接口分布相比，集中式的接口分布便于管理，且深层脚本出故障的可能性更小，但也有潜在风险；
+   q.^{}并行逻辑中的语句执行时长最好一致，不然容易出现神奇生物。
+   
+7.剧情编辑器需要优化的可能方向：
+   a.不同机型的适配性，当前绝对/相对位置的配置都不能完全解决适配性问题，如在屏幕过长的设备上（如测试的超长机型），就可能会因为采用了相对位置而出现位置偏移太大的情况。
+   b.脚本调用音效功能的开发
+   c.当前技能动作与技能特效&受击反应之间暂时没有关联，要制作出流畅真实的假战斗还是很复杂，优化方向是实现部分的战斗逻辑。
+   d.逐帧播放动画的函数playWithFrame()暂时还不好用，表现在两个方面：不支持循环播放；frame的定位有偏差，例如填写第20帧，调用的却往往是SpineTrial中的第24帧。
+   e.变量声明和循环语句
+   
+
+
+   
+   
+   
+        
 	
 	
   
