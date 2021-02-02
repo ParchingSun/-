@@ -1,4 +1,28 @@
 剧情编辑器：从入门到入土
 
--「」--剧编框架
----
+├────剧编简介
+├────脚本结构
+├────剧编wiki注释
+
+1.剧编简介
+    现有脚本语言中，所有可见及不可见事物都被成为“节点”，节点有各种类型，不同类型有不同的属性，属性的变化构成动态的画面表现，也就是当前的剧情。
+2.脚本结构
+    @scene scene_<script name>
+        @stage()
+        {
+            //除去dialogue外的节点都需要在此“声明”
+        }
+        @action start<script name>()
+        {
+            //stage（）中声明的节点在此处发生属性变化，构成“动”
+        }
+    @end
+    @storyline MP0104a()
+    {
+        enterScene(scene = scene_scene<script name>, action = "start<script name>")
+    }
+3.剧编wiki注释
+4.编辑一段脚本的基本过程
+	
+	
+  
